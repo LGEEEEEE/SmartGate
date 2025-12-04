@@ -135,7 +135,7 @@ portao/
     ├── package.json
     └── ...
 📝 Autor
-Desenvolvido por [Seu Nome] para automação residencial e estudos de IoT.
+Desenvolvido por Luiz Gustavo para automação residencial e estudos de IoT.
 
 
 ---
