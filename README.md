@@ -4,19 +4,20 @@
 ![Hardware](https://img.shields.io/badge/Hardware-ESP32-blue)
 ![Mobile](https://img.shields.io/badge/Mobile-React%20Native-61dafb)
 ![Protocol](https://img.shields.io/badge/Protocol-MQTT-orange)
+![Security](https://img.shields.io/badge/Security-SSL%2FTLS-green)
 
-Projeto de automação residencial **Full Stack IoT** desenvolvido para controlar portões eletrônicos via Wi-Fi.
+Projeto de automação residencial **Full Stack IoT** desenvolvido para controlar portões eletrônicos via Wi-Fi de forma segura.
 
-O sistema consiste em um hardware embarcado (ESP32) conectado à placa do portão e um aplicativo mobile (React Native) que permite o acionamento remoto, recebimento de feedback em tempo real e identificação do usuário/dispositivo.
+O sistema consiste em um hardware embarcado (ESP32) conectado à placa do portão e um aplicativo mobile (React Native) que permite o acionamento remoto, recebimento de feedback em tempo real e identificação do usuário/dispositivo, utilizando comunicação criptografada.
 
 ---
 
 ## 🚀 Funcionalidades
 
-- 📲 **Acionamento Remoto:** Abra o portão de qualquer lugar com conexão à internet.
+- 📲 **Acionamento Remoto Seguro:** Abra o portão de qualquer lugar com conexão à internet via canal criptografado (SSL).
 - 🔄 **Feedback em Tempo Real:** O aplicativo confirma visualmente e vibra quando o portão realmente recebeu o comando.
 - 🆔 **Identificação de Acesso:** O sistema registra quem enviou o comando (Nome do Usuário) e qual modelo de celular foi utilizado.
-- 🛡️ **Segurança:** Atua diretamente na botoeira da placa (contato seco), evitando problemas de clonagem ou incompatibilidade com sistemas *Rolling Code*.
+- 🛡️ **Segurança Hardware:** Atua diretamente na botoeira da placa (contato seco), evitando problemas de clonagem de controle RF ou incompatibilidade com sistemas *Rolling Code*.
 
 ---
 
@@ -26,16 +27,16 @@ O sistema consiste em um hardware embarcado (ESP32) conectado à placa do portã
 - **Microcontrolador:** ESP32 (Modelo DOIT DEVKIT V1)
 - **Atuador:** Módulo Relé 5V (1 Canal)
 - **IDE:** Arduino IDE (C++)
-- **Bibliotecas:** `PubSubClient`, `WiFi.h`
+- **Bibliotecas:** `PubSubClient`, `WiFiClientSecure`
 
 ### Mobile App
 - **Framework:** React Native (Expo)
 - **Linguagem:** TypeScript / JavaScript
-- **Comunicação:** MQTT via WebSockets
+- **Comunicação:** MQTT via WebSockets (WSS)
 - **Bibliotecas:** `paho-mqtt`, `expo-device`
 
 ### Backend / Nuvem
-- **Broker MQTT:** HiveMQ (Public Broker para testes)
+- **Broker MQTT:** HiveMQ Cloud (Cluster Privado com Autenticação e TLS)
 
 ---
 
@@ -61,6 +62,7 @@ Siga os passos abaixo para rodar o projeto localmente.
 - Node.js instalado.
 - Arduino IDE configurada para ESP32.
 - Git.
+- Conta criada no [HiveMQ Cloud](https://www.hivemq.com/mqtt-cloud-broker/) (Gratuito).
 
 ### 1. Clonar o Repositório
 ```bash
@@ -82,9 +84,14 @@ C++
 #define WIFI_SSID "NOME_DA_SUA_REDE"
 #define WIFI_PASSWORD "SUA_SENHA_WIFI"
 
-// ☁️ Configurações MQTT (Broker)
-#define MQTT_SERVER "broker.hivemq.com"
-#define MQTT_PORT 1883 
+// ☁️ Configurações MQTT (HiveMQ Cloud)
+#define MQTT_SERVER "seu-cluster.s1.eu.hivemq.cloud" // URL do seu cluster
+#define MQTT_PORT 8883 // Porta Segura (SSL)
+
+// 🔐 Credenciais de Acesso (Criar no site da HiveMQ)
+#define MQTT_USER "seu_usuario_mqtt"
+#define MQTT_PASS "sua_senha_forte"
+
 #define MQTT_TOPIC_COMMAND "projeto_LG/casa/portao"
 #define MQTT_TOPIC_STATUS "projeto_LG/casa/portao/status" 
 
@@ -102,6 +109,8 @@ Instale as dependências:
 Bash
 
 npm install
+Edite o arquivo app/(tabs)/index.tsx e atualize as constantes BROKER, USER e PASS com seus dados.
+
 Inicie o projeto com Expo:
 
 Bash
@@ -110,13 +119,13 @@ npx expo start
 Baixe o app Expo Go no seu celular (Android ou iOS) e escaneie o QR Code exibido no terminal.
 
 📡 Como funciona a Comunicação
-O sistema utiliza um protocolo simples baseado em strings via MQTT:
+O sistema utiliza um protocolo simples baseado em strings via MQTT Seguro:
 
 Envio (App -> Nuvem): O App envia um payload no formato: COMANDO|USUARIO|MODELO_DEVICE.
 
 Exemplo: ABRIR_PORTAO_AGORA|João Admin|Samsung S23
 
-Processamento (Nuvem -> ESP32): O ESP32 recebe a mensagem, valida se o comando inicia com ABRIR_PORTAO_AGORA e aciona o relé por 1 segundo (pulso).
+Processamento (Nuvem -> ESP32): O ESP32 recebe a mensagem via canal seguro (8883), valida as credenciais e o comando, e aciona o relé por 1 segundo (pulso).
 
 Feedback (ESP32 -> App): Ao acionar o relé com sucesso, o ESP32 publica a mensagem ABERTO_SUCESSO no tópico de status. O App recebe e notifica o usuário.
 
@@ -136,33 +145,3 @@ portao/
     └── ...
 📝 Autor
 Desenvolvido por Luiz Gustavo para automação residencial e estudos de IoT.
-
-
----
-
-### Instruções para subir no GitHub (Terminal)
-
-O conteúdo acima é o que vai *dentro* do arquivo `README.md`.
-Agora, para enviar (dar push) isso tudo para o GitHub, rode estes comandos no seu terminal, dentro da pasta `portao`:
-
-1.  **Vá no site do GitHub**, crie um repositório novo (ex: `SmartGate`) e copie o link dele (aquele que termina em `.git`).
-2.  **No terminal do seu PC:**
-
-```bash
-# Inicia o git na pasta
-git init
-
-# Adiciona todos os arquivos (o .gitignore vai impedir que o secrets.h suba)
-git add .
-
-# Salva a versão
-git commit -m "Primeiro commit: Projeto Smart Gate Completo 🚀"
-
-# Renomeia a branch principal para 'main' (padrão atual)
-git branch -M main
-
-# Conecta com o GitHub (TROQUE PELO SEU LINK)
-git remote add origin https://github.com/SEU_USUARIO_AQUI/SmartGate.git
-
-# Envia os arquivos
-git push -u origin main
